@@ -1,121 +1,112 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
 import './App.css'
 
+const initialTasks = [
+  {
+    id: 1,
+    title: 'Design homepage',
+    description: 'Create the initial TeamBoard UI',
+    status: 'To Do',
+    priority: 'High',
+    deadline: 'Sep 30',
+  },
+  {
+    id: 2,
+    title: 'Build database',
+    description: 'Set up the tasks table',
+    status: 'In Progress',
+    priority: 'High',
+    deadline: 'Oct 1',
+  },
+  {
+    id: 3,
+    title: 'Research project',
+    description: 'Collect useful references',
+    status: 'Completed',
+    priority: 'Low',
+    deadline: 'Sep 28',
+  },
+]
+
+const columns = ['To Do', 'In Progress', 'Completed']
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [tasks] = useState(initialTasks)
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="app">
+      <header className="topbar">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>TeamBoard</h1>
+          <p>Real-time collaboration for student teams</p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="live-status">
+          <span className="live-dot"></span>
+          Live
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <main className="main-content">
+        <div className="board-header">
+          <div>
+            <h2>Project Tasks</h2>
+            <p>Keep your team's work organized and synchronized.</p>
+          </div>
+
+          <button className="new-task-button">
+            + New Task
+          </button>
+        </div>
+
+        <section className="board">
+          {columns.map((column) => (
+            <div className="column" key={column}>
+              <div className="column-header">
+                <h3>{column}</h3>
+
+                <span className="task-count">
+                  {tasks.filter((task) => task.status === column).length}
+                </span>
+              </div>
+
+              <div className="task-list">
+                {tasks
+                  .filter((task) => task.status === column)
+                  .map((task) => (
+                    <article className="task-card" key={task.id}>
+                      <div className="task-card-top">
+                        <span
+                          className={`priority priority-${task.priority.toLowerCase()}`}
+                        >
+                          {task.priority}
+                        </span>
+
+                        <button className="menu-button">•••</button>
+                      </div>
+
+                      <h4>{task.title}</h4>
+
+                      <p className="task-description">
+                        {task.description}
+                      </p>
+
+                      <div className="task-footer">
+                        <span>📅 {task.deadline}</span>
+
+                        <div className="task-actions">
+                          <button>Edit</button>
+                          <button>Delete</button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      </main>
+    </div>
   )
 }
 
