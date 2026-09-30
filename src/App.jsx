@@ -85,7 +85,7 @@ function App() {
     }))
   }
 
-  async function handleSubmit(event) {
+async function handleSubmit(event) {
   event.preventDefault()
 
   if (!form.title.trim()) {
@@ -97,8 +97,16 @@ function App() {
     if (editingTask) {
       const updatedTask = await updateTask(
         editingTask.id,
-        form
+        form,
+        editingTask.version
       )
+
+      if (!updatedTask) {
+        alert(
+          'This task was changed by another user. Please close this form and load the latest version.'
+        )
+        return
+      }
 
       setTasks((currentTasks) =>
         currentTasks.map((task) =>
@@ -120,27 +128,6 @@ function App() {
   } catch (error) {
     console.error('Failed to save task:', error)
     alert('Could not save the task. Please try again.')
-  }
-}
-
-  async function handleDelete(taskId) {
-  const shouldDelete = window.confirm(
-    'Are you sure you want to delete this task?'
-  )
-
-  if (!shouldDelete) {
-    return
-  }
-
-  try {
-    await deleteTask(taskId)
-
-    setTasks((currentTasks) =>
-      currentTasks.filter((task) => task.id !== taskId)
-    )
-  } catch (error) {
-    console.error('Failed to delete task:', error)
-    alert('Could not delete the task. Please try again.')
   }
 }
 

@@ -27,16 +27,18 @@ export async function createTask(task) {
   return data
 }
 
-export async function updateTask(taskId, updates) {
+export async function updateTask(taskId, updates, expectedVersion) {
   const { data, error } = await supabase
     .from('tasks')
     .update({
       ...updates,
+      version: expectedVersion + 1,
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId)
+    .eq('version', expectedVersion)
     .select()
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw error
