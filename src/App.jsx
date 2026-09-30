@@ -1,32 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
-const initialTasks = [
-  {
-    id: 1,
-    title: 'Design homepage',
-    description: 'Create the initial TeamBoard UI',
-    status: 'To Do',
-    priority: 'High',
-    deadline: '2026-09-30',
-  },
-  {
-    id: 2,
-    title: 'Build database',
-    description: 'Set up the task database',
-    status: 'In Progress',
-    priority: 'High',
-    deadline: '2026-10-01',
-  },
-  {
-    id: 3,
-    title: 'Research project',
-    description: 'Collect useful references',
-    status: 'Completed',
-    priority: 'Low',
-    deadline: '2026-09-28',
-  },
-]
+import {
+  createTask,
+  deleteTask,
+  getTasks,
+  updateTask,
+} from './services/tasks'
+
+import {
+  subscribeToTaskChanges,
+  unsubscribeFromTaskChanges,
+} from './services/realtime'
+
+
 
 const columns = ['To Do', 'In Progress', 'Completed']
 
@@ -39,10 +26,31 @@ const emptyForm = {
 }
 
 function App() {
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState([])
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [form, setForm] = useState(emptyForm)
+
+  useEffect(() => {
+  async function loadTasks() {
+    try {
+      const data = await getTasks()
+      setTasks(data)
+    } catch (error) {
+      console.error('Failed to load tasks:', error)
+    }
+  }
+
+  loadTasks()
+
+  const channel = subscribeToTaskChanges(() => {
+    loadTasks()
+  })
+
+  return () => {
+    unsubscribeFromTaskChanges(channel)
+  }
+}, [])
 
   function openCreateModal() {
     setEditingTask(null)
@@ -77,50 +85,64 @@ function App() {
     }))
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
+  async function handleSubmit(event) {
+  event.preventDefault()
 
-    if (!form.title.trim()) {
-      alert('Please enter a task title.')
-      return
-    }
+  if (!form.title.trim()) {
+    alert('Please enter a task title.')
+    return
+  }
 
+  try {
     if (editingTask) {
+      const updatedTask = await updateTask(
+        editingTask.id,
+        form
+      )
+
       setTasks((currentTasks) =>
         currentTasks.map((task) =>
-          task.id === editingTask.id
-            ? {
-                ...task,
-                ...form,
-              }
+          task.id === updatedTask.id
+            ? updatedTask
             : task
         )
       )
     } else {
-      const newTask = {
-        id: Date.now(),
-        ...form,
-      }
+      const newTask = await createTask(form)
 
-      setTasks((currentTasks) => [...currentTasks, newTask])
+      setTasks((currentTasks) => [
+        ...currentTasks,
+        newTask,
+      ])
     }
 
     closeModal()
+  } catch (error) {
+    console.error('Failed to save task:', error)
+    alert('Could not save the task. Please try again.')
+  }
+}
+
+  async function handleDelete(taskId) {
+  const shouldDelete = window.confirm(
+    'Are you sure you want to delete this task?'
+  )
+
+  if (!shouldDelete) {
+    return
   }
 
-  function handleDelete(taskId) {
-    const shouldDelete = window.confirm(
-      'Are you sure you want to delete this task?'
-    )
-
-    if (!shouldDelete) {
-      return
-    }
+  try {
+    await deleteTask(taskId)
 
     setTasks((currentTasks) =>
       currentTasks.filter((task) => task.id !== taskId)
     )
+  } catch (error) {
+    console.error('Failed to delete task:', error)
+    alert('Could not delete the task. Please try again.')
   }
+}
 
   function formatDeadline(deadline) {
     if (!deadline) {
