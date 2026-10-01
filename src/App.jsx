@@ -31,6 +31,7 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [isConflictOpen, setIsConflictOpen] = useState(false)
 
   function handleDragStart(taskId) {
     setDraggedTaskId(taskId)
@@ -71,14 +72,8 @@ function App() {
       )
 
       if (!updatedTask) {
-        alert(
-          'This task was changed by another user. The latest version will be loaded.'
-        )
-
-        const latestTasks = await getTasks()
-        setTasks(latestTasks)
-
         setDraggedTaskId(null)
+        showConflict()
         return
       }
 
@@ -168,9 +163,7 @@ async function handleSubmit(event) {
       )
 
       if (!updatedTask) {
-        alert(
-          'This task was changed by another user. Please close this form and load the latest version.'
-        )
+        showConflict()
         return
       }
 
@@ -210,6 +203,25 @@ async function handleSubmit(event) {
         year: 'numeric',
       }
     )
+  }
+
+  function showConflict() {
+  setIsModalOpen(false)
+  setIsConflictOpen(true)
+  }
+
+  async function loadLatestAfterConflict() {
+    try {
+      const latestTasks = await getTasks()
+
+      setTasks(latestTasks)
+      setIsConflictOpen(false)
+      setEditingTask(null)
+      setForm(emptyForm)
+    } catch (error) {
+      console.error('Failed to load latest tasks:', error)
+      alert('Could not load the latest version. Please try again.')
+    }
   }
 
   return (
@@ -428,6 +440,34 @@ async function handleSubmit(event) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {isConflictOpen && (
+        <div className="modal-backdrop">
+          <div className="conflict-modal">
+            <div className="conflict-icon">
+              ⚠
+            </div>
+
+            <h2>Task changed elsewhere</h2>
+
+            <p>
+              Another user updated this task while you were
+              working on it.
+            </p>
+
+            <p className="conflict-subtext">
+              Your older version was not allowed to overwrite
+              the newer change.
+            </p>
+
+            <button
+              className="load-latest-button"
+              onClick={loadLatestAfterConflict}
+            >
+              Load Latest Version
+            </button>
           </div>
         </div>
       )}
