@@ -27,9 +27,75 @@ const emptyForm = {
 
 function App() {
   const [tasks, setTasks] = useState([])
+  const [draggedTaskId, setDraggedTaskId] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [form, setForm] = useState(emptyForm)
+
+  function handleDragStart(taskId) {
+    setDraggedTaskId(taskId)
+  }
+
+  function handleDragEnd() {
+    setDraggedTaskId(null)
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault()
+  }
+
+  async function handleDrop(status) {
+    if (!draggedTaskId) {
+      return
+    }
+
+    const task = tasks.find(
+      (currentTask) => currentTask.id === draggedTaskId
+    )
+
+    if (!task) {
+      setDraggedTaskId(null)
+      return
+    }
+
+    if (task.status === status) {
+      setDraggedTaskId(null)
+      return
+    }
+
+    try {
+      const updatedTask = await updateTask(
+        task.id,
+        { status },
+        task.version
+      )
+
+      if (!updatedTask) {
+        alert(
+          'This task was changed by another user. The latest version will be loaded.'
+        )
+
+        const latestTasks = await getTasks()
+        setTasks(latestTasks)
+
+        setDraggedTaskId(null)
+        return
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.map((currentTask) =>
+          currentTask.id === updatedTask.id
+            ? updatedTask
+            : currentTask
+        )
+      )
+    } catch (error) {
+      console.error('Failed to move task:', error)
+      alert('Could not move the task. Please try again.')
+    }
+
+    setDraggedTaskId(null)
+  }
 
   useEffect(() => {
   async function loadTasks() {
@@ -184,7 +250,12 @@ async function handleSubmit(event) {
             )
 
             return (
-              <div className="column" key={column}>
+              <div
+                className="column"
+                key={column}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(column)}
+              >
                 <div className="column-header">
                   <h3>{column}</h3>
 
@@ -196,8 +267,13 @@ async function handleSubmit(event) {
                 <div className="task-list">
                   {columnTasks.map((task) => (
                     <article
-                      className="task-card"
+                      className={`task-card ${
+                        draggedTaskId === task.id ? 'is-dragging' : ''
+                      }`}
                       key={task.id}
+                      draggable
+                      onDragStart={() => handleDragStart(task.id)}
+                      onDragEnd={handleDragEnd}
                     >
                       <div className="task-card-top">
                         <span
