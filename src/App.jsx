@@ -27,6 +27,7 @@ const emptyForm = {
 
 function App() {
   const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [draggedTaskId, setDraggedTaskId] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -99,6 +100,8 @@ function App() {
       setTasks(data)
     } catch (error) {
       console.error('Failed to load tasks:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -255,6 +258,12 @@ async function handleSubmit(event) {
           </button>
         </div>
 
+      {loading ? (
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading your tasks...</p>
+        </div>
+      ) : (
         <section className="board">
           {columns.map((column) => {
             const columnTasks = tasks.filter(
@@ -335,6 +344,7 @@ async function handleSubmit(event) {
             )
           })}
         </section>
+      )}
       </main>
 
       {isModalOpen && (
