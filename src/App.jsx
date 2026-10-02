@@ -171,6 +171,27 @@ function App() {
       [name]: value,
     }))
   }
+  
+  async function handleDelete(taskId) {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this task?'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      await deleteTask(taskId)
+
+      setTasks((currentTasks) =>
+        currentTasks.filter((task) => task.id !== taskId)
+      )
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+      alert('Could not delete the task. Please try again.')
+    }
+  }
 
 async function handleSubmit(event) {
   event.preventDefault()
