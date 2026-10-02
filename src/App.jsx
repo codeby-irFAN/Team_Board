@@ -13,6 +13,13 @@ import {
   unsubscribeFromTaskChanges,
 } from './services/realtime'
 
+import {
+  subscribeToEditingPresence,
+  unsubscribeFromEditingPresence,
+  startEditingTask,
+  stopEditingTask,
+} from "./services/editingPresence";
+
 
 
 const columns = ['To Do', 'In Progress', 'Completed']
@@ -33,6 +40,8 @@ function App() {
   const [editingTask, setEditingTask] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [isConflictOpen, setIsConflictOpen] = useState(false)
+  const [editingTasks, setEditingTasks] = useState({})
+  const [isEditingBlockedOpen, setIsEditingBlockedOpen] = useState(false);
 
   function handleDragStart(taskId) {
     setDraggedTaskId(taskId)
@@ -114,7 +123,16 @@ function App() {
   return () => {
     unsubscribeFromTaskChanges(channel)
   }
-}, [])
+  }, [])
+  useEffect(() => {
+    const channel = subscribeToEditingPresence((editing) => {
+      setEditingTasks(editing);
+    });
+
+    return () => {
+      unsubscribeFromEditingPresence();
+    };
+  }, []);
 
   function openCreateModal() {
     setEditingTask(null)
@@ -136,6 +154,11 @@ function App() {
 
   function closeModal() {
     setIsModalOpen(false)
+
+    if (editingTask) {
+      stopEditingTask()
+    }
+
     setEditingTask(null)
     setForm(emptyForm)
   }
@@ -209,8 +232,9 @@ async function handleSubmit(event) {
   }
 
   function showConflict() {
-  setIsModalOpen(false)
-  setIsConflictOpen(true)
+    stopEditingTask()
+    setIsModalOpen(false)
+    setIsConflictOpen(true)
   }
 
   async function loadLatestAfterConflict() {
@@ -304,6 +328,12 @@ async function handleSubmit(event) {
                         </span>
                       </div>
 
+                      {editingTasks[task.id] && (
+                        <div className="editing-indicator">
+                          ✏️ Someone is editing this task
+                        </div>
+                      )}
+                      
                       <h4>{task.title}</h4>
 
                       <p className="task-description">
@@ -318,9 +348,16 @@ async function handleSubmit(event) {
 
                       <div className="task-actions">
                         <button
-                          className="edit-button"
-                          onClick={() => openEditModal(task)}
-                        >
+                            onClick={async () => {
+                              if (editingTasks[task.id]) {
+                                setIsEditingBlockedOpen(true);
+                                return;
+                              }
+
+                              await startEditingTask(task.id);
+                              openEditModal(task);
+                            }}
+                          >
                           Edit
                         </button>
 
@@ -478,6 +515,27 @@ async function handleSubmit(event) {
             >
               Load Latest Version
             </button>
+          </div>
+        </div>
+      )}
+      {isEditingBlockedOpen && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <h2>Task currently being edited</h2>
+
+            <p>
+              Someone else is currently editing this task.
+              Please wait until they finish before editing it.
+            </p>
+
+            <div className="modal-actions">
+              <button
+                className="cancel-button"
+                onClick={() => setIsEditingBlockedOpen(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -320,6 +320,9 @@
   border-radius: 18px;
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
 }
+.modal h2 {
+  color: #0b0a0a;
+}
 
 .modal-header {
   display: flex;
@@ -555,4 +558,14 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.editing-indicator {
+  margin-top: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #fffbe5;
+  color: #e84504;
+  font-size: 11px;
+  font-weight: 600;
 }
