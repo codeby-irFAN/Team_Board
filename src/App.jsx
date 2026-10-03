@@ -343,8 +343,8 @@ function App() {
                                 return;
                               }
 
-                              await startEditingTask(task.id);
                               openEditModal(task);
+                              startEditingTask(task.id);
                             }}
                           >
                             Edit

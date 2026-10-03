@@ -1,65 +1,78 @@
-import { supabase } from "../lib/supabaseclient";
+import { supabase } from '../lib/supabaseclient'
 
-const clientId = crypto.randomUUID();
+const clientId = crypto.randomUUID()
 
-let channel = null;
+let channel = null
+let onChangeCallback = null
+const editingTasks = {}
 
 export function subscribeToEditingPresence(onChange) {
+  onChangeCallback = onChange
+
   channel = supabase
-    .channel("teamboard-editing-presence", {
-      config: {
-        presence: {
-          key: clientId,
-        },
-      },
-    })
-    .on("presence", { event: "sync" }, () => {
-      const state = channel.presenceState();
-      const editingTasks = {};
+    .channel('teamboard-editing-presence')
+    .on(
+      'broadcast',
+      { event: 'editing' },
+      ({ payload }) => {
+        if (!payload) return
 
-      Object.values(state)
-        .flat()
-        .forEach((presence) => {
-          if (presence.clientId !== clientId && presence.editingTaskId) {
-            editingTasks[presence.editingTaskId] = true;
-          }
-        });
+        if (payload.clientId === clientId) {
+          return
+        }
 
-      onChange(editingTasks);
-    })
-    .subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await channel.track({
-          clientId,
-          editingTaskId: null,
-        });
+        if (payload.editingTaskId) {
+          editingTasks[payload.clientId] = payload.editingTaskId
+        } else {
+          delete editingTasks[payload.clientId]
+        }
+
+        const currentEditingTasks = {}
+
+        Object.values(editingTasks).forEach((taskId) => {
+          currentEditingTasks[taskId] = true
+        })
+
+        if (onChangeCallback) {
+          onChangeCallback(currentEditingTasks)
+        }
       }
-    });
+    )
+    .subscribe()
 
-  return channel;
+  return channel
 }
 
 export async function startEditingTask(taskId) {
-  if (!channel) return;
+  if (!channel) return
 
-  await channel.track({
-    clientId,
-    editingTaskId: taskId,
-  });
+  await channel.send({
+    type: 'broadcast',
+    event: 'editing',
+    payload: {
+      clientId,
+      editingTaskId: taskId,
+    },
+  })
 }
 
 export async function stopEditingTask() {
-  if (!channel) return;
+  if (!channel) return
 
-  await channel.track({
-    clientId,
-    editingTaskId: null,
-  });
+  await channel.send({
+    type: 'broadcast',
+    event: 'editing',
+    payload: {
+      clientId,
+      editingTaskId: null,
+    },
+  })
 }
 
 export function unsubscribeFromEditingPresence() {
   if (channel) {
-    supabase.removeChannel(channel);
-    channel = null;
+    supabase.removeChannel(channel)
+    channel = null
+    onChangeCallback = null
   }
 }
