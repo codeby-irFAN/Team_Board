@@ -1,17 +1,12 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
 
-import {
-  createTask,
-  deleteTask,
-  getTasks,
-  updateTask,
-} from './services/tasks'
+import { createTask, deleteTask, getTasks, updateTask } from "./services/tasks";
 
 import {
   subscribeToTaskChanges,
   unsubscribeFromTaskChanges,
-} from './services/realtime'
+} from "./services/realtime";
 
 import {
   subscribeToEditingPresence,
@@ -20,110 +15,100 @@ import {
   stopEditingTask,
 } from "./services/editingPresence";
 
-
-
-const columns = ['To Do', 'In Progress', 'Completed']
+const columns = ["To Do", "In Progress", "Completed"];
 
 const emptyForm = {
-  title: '',
-  description: '',
-  status: 'To Do',
-  priority: 'Medium',
-  deadline: '',
-}
+  title: "",
+  description: "",
+  status: "To Do",
+  priority: "Medium",
+  deadline: "",
+};
 
 function App() {
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [draggedTaskId, setDraggedTaskId] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingTask, setEditingTask] = useState(null)
-  const [form, setForm] = useState(emptyForm)
-  const [isConflictOpen, setIsConflictOpen] = useState(false)
-  const [editingTasks, setEditingTasks] = useState({})
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [draggedTaskId, setDraggedTaskId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [isConflictOpen, setIsConflictOpen] = useState(false);
+  const [editingTasks, setEditingTasks] = useState({});
   const [isEditingBlockedOpen, setIsEditingBlockedOpen] = useState(false);
 
   function handleDragStart(taskId) {
-    setDraggedTaskId(taskId)
+    setDraggedTaskId(taskId);
   }
 
   function handleDragEnd() {
-    setDraggedTaskId(null)
+    setDraggedTaskId(null);
   }
 
   function handleDragOver(event) {
-    event.preventDefault()
+    event.preventDefault();
   }
 
   async function handleDrop(status) {
     if (!draggedTaskId) {
-      return
+      return;
     }
 
-    const task = tasks.find(
-      (currentTask) => currentTask.id === draggedTaskId
-    )
+    const task = tasks.find((currentTask) => currentTask.id === draggedTaskId);
 
     if (!task) {
-      setDraggedTaskId(null)
-      return
+      setDraggedTaskId(null);
+      return;
     }
 
     if (task.status === status) {
-      setDraggedTaskId(null)
-      return
+      setDraggedTaskId(null);
+      return;
     }
 
     try {
-      const updatedTask = await updateTask(
-        task.id,
-        { status },
-        task.version
-      )
+      const updatedTask = await updateTask(task.id, { status }, task.version);
 
       if (!updatedTask) {
-        setDraggedTaskId(null)
-        showConflict()
-        return
+        setDraggedTaskId(null);
+        showConflict();
+        return;
       }
 
       setTasks((currentTasks) =>
         currentTasks.map((currentTask) =>
-          currentTask.id === updatedTask.id
-            ? updatedTask
-            : currentTask
-        )
-      )
+          currentTask.id === updatedTask.id ? updatedTask : currentTask,
+        ),
+      );
     } catch (error) {
-      console.error('Failed to move task:', error)
-      alert('Could not move the task. Please try again.')
+      console.error("Failed to move task:", error);
+      alert("Could not move the task. Please try again.");
     }
 
-    setDraggedTaskId(null)
+    setDraggedTaskId(null);
   }
 
   useEffect(() => {
-  async function loadTasks() {
-    try {
-      const data = await getTasks()
-      setTasks(data)
-    } catch (error) {
-      console.error('Failed to load tasks:', error)
-    } finally {
-      setLoading(false)
+    async function loadTasks() {
+      try {
+        const data = await getTasks();
+        setTasks(data);
+      } catch (error) {
+        console.error("Failed to load tasks:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
 
-  loadTasks()
+    loadTasks();
 
-  const channel = subscribeToTaskChanges(() => {
-    loadTasks()
-  })
+    const channel = subscribeToTaskChanges(() => {
+      loadTasks();
+    });
 
-  return () => {
-    unsubscribeFromTaskChanges(channel)
-  }
-  }, [])
+    return () => {
+      unsubscribeFromTaskChanges(channel);
+    };
+  }, []);
   useEffect(() => {
     const channel = subscribeToEditingPresence((editing) => {
       setEditingTasks(editing);
@@ -135,140 +120,132 @@ function App() {
   }, []);
 
   function openCreateModal() {
-    setEditingTask(null)
-    setForm(emptyForm)
-    setIsModalOpen(true)
+    setEditingTask(null);
+    setForm(emptyForm);
+    setIsModalOpen(true);
   }
 
   function openEditModal(task) {
-    setEditingTask(task)
+    setEditingTask(task);
     setForm({
       title: task.title,
       description: task.description,
       status: task.status,
       priority: task.priority,
       deadline: task.deadline,
-    })
-    setIsModalOpen(true)
+    });
+    setIsModalOpen(true);
   }
 
   function closeModal() {
-    setIsModalOpen(false)
+    setIsModalOpen(false);
 
     if (editingTask) {
-      stopEditingTask()
+      stopEditingTask();
     }
 
-    setEditingTask(null)
-    setForm(emptyForm)
+    setEditingTask(null);
+    setForm(emptyForm);
   }
 
   function handleChange(event) {
-    const { name, value } = event.target
+    const { name, value } = event.target;
 
     setForm((currentForm) => ({
       ...currentForm,
       [name]: value,
-    }))
+    }));
   }
-  
+
   async function handleDelete(taskId) {
     const confirmed = window.confirm(
-      'Are you sure you want to delete this task?'
-    )
+      "Are you sure you want to delete this task?",
+    );
 
     if (!confirmed) {
-      return
+      return;
     }
 
     try {
-      await deleteTask(taskId)
+      await deleteTask(taskId);
 
       setTasks((currentTasks) =>
-        currentTasks.filter((task) => task.id !== taskId)
-      )
+        currentTasks.filter((task) => task.id !== taskId),
+      );
     } catch (error) {
-      console.error('Failed to delete task:', error)
-      alert('Could not delete the task. Please try again.')
+      console.error("Failed to delete task:", error);
+      alert("Could not delete the task. Please try again.");
     }
   }
 
-async function handleSubmit(event) {
-  event.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-  if (!form.title.trim()) {
-    alert('Please enter a task title.')
-    return
-  }
+    if (!form.title.trim()) {
+      alert("Please enter a task title.");
+      return;
+    }
 
-  try {
-    if (editingTask) {
-      const updatedTask = await updateTask(
-        editingTask.id,
-        form,
-        editingTask.version
-      )
+    try {
+      if (editingTask) {
+        const updatedTask = await updateTask(
+          editingTask.id,
+          form,
+          editingTask.version,
+        );
 
-      if (!updatedTask) {
-        showConflict()
-        return
+        if (!updatedTask) {
+          showConflict();
+          return;
+        }
+
+        setTasks((currentTasks) =>
+          currentTasks.map((task) =>
+            task.id === updatedTask.id ? updatedTask : task,
+          ),
+        );
+      } else {
+        const newTask = await createTask(form);
+
+        setTasks((currentTasks) => [...currentTasks, newTask]);
       }
 
-      setTasks((currentTasks) =>
-        currentTasks.map((task) =>
-          task.id === updatedTask.id
-            ? updatedTask
-            : task
-        )
-      )
-    } else {
-      const newTask = await createTask(form)
-
-      setTasks((currentTasks) => [
-        ...currentTasks,
-        newTask,
-      ])
+      closeModal();
+    } catch (error) {
+      console.error("Failed to save task:", error);
+      alert("Could not save the task. Please try again.");
     }
-
-    closeModal()
-  } catch (error) {
-    console.error('Failed to save task:', error)
-    alert('Could not save the task. Please try again.')
   }
-}
 
   function formatDeadline(deadline) {
     if (!deadline) {
-      return 'No deadline'
+      return "No deadline";
     }
 
-    return new Date(`${deadline}T00:00:00`).toLocaleDateString(
-      'en-IN',
-      {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      }
-    )
+    return new Date(`${deadline}T00:00:00`).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   }
 
   function showConflict() {
-    stopEditingTask()
-    setIsModalOpen(false)
-    setIsConflictOpen(true)
+    stopEditingTask();
+    setIsModalOpen(false);
+    setIsConflictOpen(true);
   }
 
   async function loadLatestAfterConflict() {
     try {
-      const latestTasks = await getTasks()
+      const latestTasks = await getTasks();
 
-      setTasks(latestTasks)
-      setIsConflictOpen(false)
-      setEditingTask(null)
-      setForm(emptyForm)
+      setTasks(latestTasks);
+      setIsConflictOpen(false);
+      setEditingTask(null);
+      setForm(emptyForm);
     } catch (error) {
-      console.error('Failed to load latest tasks:', error)
-      alert('Could not load the latest version. Please try again.')
+      console.error("Failed to load latest tasks:", error);
+      alert("Could not load the latest version. Please try again.");
     }
   }
 
@@ -277,7 +254,7 @@ async function handleSubmit(event) {
       <header className="topbar">
         <div>
           <h1>TeamBoard</h1>
-          <p>Real-time collaboration for student teams</p>
+          <p>Real-time collaboration for your teams</p>
         </div>
 
         <div className="live-status">
@@ -289,86 +266,77 @@ async function handleSubmit(event) {
       <main className="main-content">
         <div className="board-header">
           <div>
-            <h2>Project Tasks</h2>
-            <p>
-              Keep your team's work organized and synchronized.
-            </p>
+            <h2>Your Team Tasks</h2>
+            <p>Keep your team's work organized and synchronized.</p>
           </div>
 
-          <button
-            className="new-task-button"
-            onClick={openCreateModal}
-          >
+          <button className="new-task-button" onClick={openCreateModal}>
             + New Task
           </button>
         </div>
 
-      {loading ? (
-        <div className="loading-state">
-          <div className="loading-spinner"></div>
-          <p>Loading your tasks...</p>
-        </div>
-      ) : (
-        <section className="board">
-          {columns.map((column) => {
-            const columnTasks = tasks.filter(
-              (task) => task.status === column
-            )
+        {loading ? (
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading your tasks...</p>
+          </div>
+        ) : (
+          <section className="board">
+            {columns.map((column) => {
+              const columnTasks = tasks.filter(
+                (task) => task.status === column,
+              );
 
-            return (
-              <div
-                className="column"
-                key={column}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(column)}
-              >
-                <div className="column-header">
-                  <h3>{column}</h3>
+              return (
+                <div
+                  className="column"
+                  key={column}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(column)}
+                >
+                  <div className="column-header">
+                    <h3>{column}</h3>
 
-                  <span className="task-count">
-                    {columnTasks.length}
-                  </span>
-                </div>
+                    <span className="task-count">{columnTasks.length}</span>
+                  </div>
 
-                <div className="task-list">
-                  {columnTasks.map((task) => (
-                    <article
-                      className={`task-card ${
-                        draggedTaskId === task.id ? 'is-dragging' : ''
-                      }`}
-                      key={task.id}
-                      draggable
-                      onDragStart={() => handleDragStart(task.id)}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <div className="task-card-top">
-                        <span
-                          className={`priority priority-${task.priority.toLowerCase()}`}
-                        >
-                          {task.priority}
-                        </span>
-                      </div>
-
-                      {editingTasks[task.id] && (
-                        <div className="editing-indicator">
-                          ✏️ Someone is editing this task
+                  <div className="task-list">
+                    {columnTasks.map((task) => (
+                      <article
+                        className={`task-card ${
+                          draggedTaskId === task.id ? "is-dragging" : ""
+                        }`}
+                        key={task.id}
+                        draggable
+                        onDragStart={() => handleDragStart(task.id)}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <div className="task-card-top">
+                          <span
+                            className={`priority priority-${task.priority.toLowerCase()}`}
+                          >
+                            {task.priority}
+                          </span>
                         </div>
-                      )}
-                      
-                      <h4>{task.title}</h4>
 
-                      <p className="task-description">
-                        {task.description || 'No description'}
-                      </p>
+                        {editingTasks[task.id] && (
+                          <div className="editing-indicator">
+                            ✏️ Someone is editing this task
+                          </div>
+                        )}
 
-                      <div className="task-footer">
-                        <span>
-                          📅 {formatDeadline(task.deadline)}
-                        </span>
-                      </div>
+                        <h4>{task.title}</h4>
 
-                      <div className="task-actions">
-                        <button
+                        <p className="task-description">
+                          {task.description || "No description"}
+                        </p>
+
+                        <div className="task-footer">
+                          <span>📅 {formatDeadline(task.deadline)}</span>
+                        </div>
+
+                        <div className="task-actions">
+                          <button
                             onClick={async () => {
                               if (editingTasks[task.id]) {
                                 setIsEditingBlockedOpen(true);
@@ -379,30 +347,28 @@ async function handleSubmit(event) {
                               openEditModal(task);
                             }}
                           >
-                          Edit
-                        </button>
+                            Edit
+                          </button>
 
-                        <button
-                          className="delete-button"
-                          onClick={() => handleDelete(task.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                          <button
+                            className="delete-button"
+                            onClick={() => handleDelete(task.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </article>
+                    ))}
 
-                  {columnTasks.length === 0 && (
-                    <div className="empty-column">
-                      No tasks here
-                    </div>
-                  )}
+                    {columnTasks.length === 0 && (
+                      <div className="empty-column">No tasks here</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
-        </section>
-      )}
+              );
+            })}
+          </section>
+        )}
       </main>
 
       {isModalOpen && (
@@ -410,14 +376,12 @@ async function handleSubmit(event) {
           <div className="modal">
             <div className="modal-header">
               <div>
-                <h2>
-                  {editingTask ? 'Edit Task' : 'Create Task'}
-                </h2>
+                <h2>{editingTask ? "Edit Task" : "Create Task"}</h2>
 
                 <p>
                   {editingTask
-                    ? 'Update your task details.'
-                    : 'Add a new task to your board.'}
+                    ? "Update your task details."
+                    : "Add a new task to your board."}
                 </p>
               </div>
 
@@ -500,11 +464,8 @@ async function handleSubmit(event) {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  className="save-button"
-                >
-                  {editingTask ? 'Save Changes' : 'Create Task'}
+                <button type="submit" className="save-button">
+                  {editingTask ? "Save Changes" : "Create Task"}
                 </button>
               </div>
             </form>
@@ -514,20 +475,14 @@ async function handleSubmit(event) {
       {isConflictOpen && (
         <div className="modal-backdrop">
           <div className="conflict-modal">
-            <div className="conflict-icon">
-              ⚠
-            </div>
+            <div className="conflict-icon">⚠</div>
 
             <h2>Task changed elsewhere</h2>
 
-            <p>
-              Another user updated this task while you were
-              working on it.
-            </p>
+            <p>Another user updated this task while you were working on it.</p>
 
             <p className="conflict-subtext">
-              Your older version was not allowed to overwrite
-              the newer change.
+              Your older version was not allowed to overwrite the newer change.
             </p>
 
             <button
@@ -545,8 +500,8 @@ async function handleSubmit(event) {
             <h2>Task currently being edited</h2>
 
             <p>
-              Someone else is currently editing this task.
-              Please wait until they finish before editing it.
+              Someone else is currently editing this task. Please wait until
+              they finish before editing it.
             </p>
 
             <div className="modal-actions">
@@ -561,7 +516,7 @@ async function handleSubmit(event) {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

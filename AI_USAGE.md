@@ -3,14 +3,17 @@
 AI tools were used during development for:
 
 - Explaining React concepts that were new to me.
-- Helping me understand documentation and error messages.
-- Suggesting debugging approaches.
-- Reviewing implementation ideas.
+- Helping interpret errors and debugging messages.
+- Suggesting implementation and debugging approaches.
+- Reviewing code structure and implementation ideas.
 
-I personally tested and reviewed the implementation.
+I tested and reviewed the resulting code myself.
 
-I verified the behaviour of the application locally and made
-the final implementation decisions.
+I verified the application's behaviour locally and during
+testing with multiple browser clients.
 
-Important architectural decisions and challenges are documented
-separately in DECISIONS.md.
+The final implementation and architectural decisions were
+reviewed and understood by me.
+
+Important realtime and state-management decisions are documented
+in DECISIONS.md.

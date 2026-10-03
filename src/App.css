@@ -66,7 +66,7 @@
 .board-header h2 {
   margin: 0;
   font-size: 24px;
-  color: #000000
+  color: #000000;
 }
 
 .board-header p {
@@ -251,12 +251,6 @@
     width: 100%;
   }
 }
-
-
-
-
-
-
 
 .empty-column {
   padding: 30px 10px;
@@ -448,7 +442,9 @@
 }
 
 .column {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .column:hover {
