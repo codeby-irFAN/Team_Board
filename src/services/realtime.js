@@ -1,26 +1,26 @@
-import { supabase } from "../lib/supabaseclient";
+import { supabase } from '../lib/supabaseclient'
 
 export function subscribeToTaskChanges(onChange) {
   const channel = supabase
-    .channel("teamboard-task-changes")
+    .channel('teamboard-task-changes')
     .on(
-      "postgres_changes",
+      'postgres_changes',
       {
-        event: "*",
-        schema: "public",
-        table: "tasks",
+        event: '*',
+        schema: 'public',
+        table: 'tasks',
       },
-      () => {
-        onChange();
-      },
+      (payload) => {
+        onChange(payload)
+      }
     )
-    .subscribe();
+    .subscribe()
 
-  return channel;
+  return channel
 }
 
 export function unsubscribeFromTaskChanges(channel) {
   if (channel) {
-    supabase.removeChannel(channel);
+    supabase.removeChannel(channel)
   }
 }

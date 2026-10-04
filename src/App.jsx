@@ -101,9 +101,37 @@ function App() {
 
     loadTasks();
 
-    const channel = subscribeToTaskChanges(() => {
-      loadTasks();
-    });
+    const channel = subscribeToTaskChanges((payload) => {
+      const { eventType, new: newTask, old: oldTask } = payload
+
+      if (eventType === 'INSERT') {
+        setTasks((currentTasks) => {
+          const alreadyExists = currentTasks.some(
+            (task) => task.id === newTask.id
+          )
+
+          if (alreadyExists) {
+            return currentTasks
+          }
+
+          return [...currentTasks, newTask]
+        })
+      }
+
+      if (eventType === 'UPDATE') {
+        setTasks((currentTasks) =>
+          currentTasks.map((task) =>
+            task.id === newTask.id ? newTask : task
+          )
+        )
+      }
+
+      if (eventType === 'DELETE') {
+        setTasks((currentTasks) =>
+          currentTasks.filter((task) => task.id !== oldTask.id)
+        )
+      }
+    })
 
     return () => {
       unsubscribeFromTaskChanges(channel);

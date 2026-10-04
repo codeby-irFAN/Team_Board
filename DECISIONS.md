@@ -1,22 +1,31 @@
+```md
 # TeamBoard – Technical Decisions
 
 ## 1. Technology Choices
 
 ### React + Vite
+
 I used React with Vite because the project has dynamic UI state such as tasks, forms, loading state, drag-and-drop, conflicts, and editing indicators.
 
 ### CSS
+
 I used normal CSS to keep the project simple and easy to understand.
 
 ### Supabase PostgreSQL
+
 I chose Supabase because it provides a PostgreSQL database and a JavaScript client in one service.
 
 The `tasks` table stores the task title, description, status, priority, deadline, version, and timestamps.
 
 ### Supabase Realtime
+
 I used Supabase Realtime to detect changes in the `tasks` table.
 
-When a task is created, updated, or deleted, other open browser windows receive the change and reload the latest task data without requiring a refresh.
+When a task is created, updated, or deleted, other open browser windows receive the corresponding realtime event.
+
+The application uses the realtime event payload directly to update the React task state instead of fetching the complete task list again.
+
+This reduces unnecessary database requests and makes changes appear faster between connected browser windows.
 
 ---
 
@@ -25,6 +34,7 @@ When a task is created, updated, or deleted, other open browser windows receive 
 I used React's built-in `useState` and `useEffect` instead of adding a separate state-management library.
 
 Important state includes:
+
 - `tasks` for board data
 - `loading` for the loading state
 - `editingTask` for the task being edited
@@ -40,16 +50,22 @@ This was enough for the scope of the project and avoided unnecessary dependencie
 
 The main data flow is:
 
-**User Action → Supabase Database → Realtime Event → React → UI Update**
+**User Action → Supabase Database → Realtime Event → React State → UI Update**
 
 For example, when a task is edited:
 
 1. The user submits the edit form.
 2. The update is sent to Supabase.
 3. PostgreSQL stores the new data.
-4. Supabase Realtime sends a database change event.
-5. TeamBoard loads the latest tasks.
+4. Supabase Realtime sends an `UPDATE` event containing the changed task.
+5. TeamBoard updates the matching task directly in React state.
 6. Other open browser windows show the updated task.
+
+For task creation, the `INSERT` payload is added to the task list.
+
+For task deletion, the `DELETE` payload is used to remove the task from the task list.
+
+This avoids making another request to fetch all tasks after every realtime event.
 
 ---
 
@@ -88,19 +104,21 @@ This prevents an older task version from silently overwriting a newer change.
 
 ---
 
-## 5. Editing Presence
+## 5. Editing Indicator and Lock
 
 Conflict handling protects the database, but I also wanted users to know when another person is already editing a task.
 
-I used Supabase Realtime Presence for this.
+I used Supabase Realtime Broadcast for this feature.
 
-When a user starts editing a task, their browser shares the task being edited with the other connected clients.
+When a user starts editing a task, their browser broadcasts which task they are editing to the other connected clients.
 
 Other users then see:
 
 **Someone is editing this task**
 
 The Edit button is blocked while another user is editing that task.
+
+This acts as a client-side editing lock to reduce simultaneous editing.
 
 The version check is still used as the final protection against stale updates.
 
@@ -132,7 +150,7 @@ This prevents the board from temporarily appearing empty while the data is still
 
 ## 8. Authentication Trade-off
 
-Authentication was not added because the main focus of this project was realtime collaboration and conflict handling.
+Authentication was not added because the main focus of this project was real-time collaboration and conflict handling.
 
 The current version therefore works as a shared demo board.
 
@@ -146,10 +164,13 @@ The main challenge was keeping multiple browser windows synchronized while preve
 
 I solved this using two mechanisms:
 
-1. **Supabase Realtime** keeps browser windows synchronized.
+1. **Supabase Realtime** keeps browser windows synchronized by sending database change events.
+
 2. **Task versioning** prevents outdated updates from overwriting newer data.
 
-Realtime Presence was added to give users an immediate indication when another person is editing the same task.
+I also used Supabase Realtime Broadcast to show when another user is editing a task and temporarily block editing that task in other clients.
+
+A further optimization was to use the realtime event payload directly instead of fetching all tasks again after every database change.
 
 ---
 
