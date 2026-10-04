@@ -58,7 +58,7 @@ This avoids fetching the complete task list after every change and makes realtim
 
 ## Architecture
 
-```text
+```
 React UI
    |
    v
